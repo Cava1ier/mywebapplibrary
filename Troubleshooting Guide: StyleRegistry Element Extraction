@@ -1,0 +1,161 @@
+# Troubleshooting Guide: StyleRegistry Element Extraction
+
+This guide helps you identify and resolve common issues when managing large or complex style registries using the `StyleRegistry` and `ClassRegistry` system in MyHTML5. It is especially useful when your UI components are becoming difficult to maintain due to excessive use of `this.nl` (null style values), repetitive patterns, or unclear separation of responsibilities.
+
+---
+
+## Common Problems & How to Spot Them
+
+### 1. Too Many `this.nl` (Nulls) in a Class
+
+**Symptoms:**
+- Most style values for a class or variant are `null` (e.g., >60%).
+- Adding new classes requires adding long arrays filled with `null`.
+- It becomes hard to reason about which styles apply where.
+
+**Example (PROBLEM):**
+```js
+this.styleRegistry.addClassPrefix('problematic',
+  ['background', 'padding', 'margin', ...],
+  ['container', 'stat-card-1', 'stat-card-2'],
+  [
+    // container: many unused properties set to null
+    ['radial-gradient(...)', '20px', ... this.nl, this.nl, ...],
+    // stat-card-1: only a few properties used, rest are null
+    [this.nl, this.nl, ... '8px', ... this.nl, ...]
+  ]
+);
+```
+**Why it's bad:**  
+This makes your styles hard to maintain and understand.
+
+---
+
+### 2. Repetitive Patterns Across Classes
+
+**Symptoms:**
+- Multiple classnames have almost identical sets of style values.
+- Small differences require duplicating most of the style array.
+
+**Why it's bad:**  
+Duplication increases the risk of errors and makes maintenance harder.
+
+---
+
+### 3. Mixing Responsibilities
+
+**Symptoms:**
+- One class prefix mixes layout, visual, and typography properties.
+- Updating, e.g., padding, unexpectedly affects unrelated elements.
+
+**Why it's bad:**  
+Violates the single responsibility principle, making bugs likely and changes risky.
+
+---
+
+## Solutions & Extraction Strategies
+
+### Solution 1: Split by Responsibility
+
+Separate your styles into prefixes focused on one concern:
+
+- `layout` (display, grid, flex, etc.)
+- `visual` (background, border, shadow)
+- `text` (font, color, line-height)
+- `space` (padding, margin)
+
+**Example:**
+```js
+this.styleRegistry.addClassPrefix('layout', [...], [...], [...]);
+this.styleRegistry.addClassPrefix('visual', [...], [...], [...]);
+```
+
+---
+
+### Solution 2: Split by Component or Pattern
+
+Group styles by reusable UI patterns:
+
+- `card`, `button`, `form`, `panel`, `widget`, etc.
+- Each prefix holds only what's relevant to that component.
+
+**Example:**
+```js
+this.styleRegistry.addClassPrefix('button', [...], ['primary', 'danger'], [...]);
+this.styleRegistry.addClassPrefix('card', [...], ['default', 'featured'], [...]);
+```
+
+---
+
+### Solution 3: Atomic or Pattern-Based Design
+
+Use small, highly reusable atomic prefixes for single-purpose classes. Compose complex UIs by combining these.
+
+**Example:**
+```js
+this.styleRegistry.addClassPrefix('space', ['padding', 'margin'], ['sm', 'md', 'lg'], [...]);
+this.styleRegistry.addClassPrefix('text', ['color', 'font-size'], ['primary', 'secondary'], [...]);
+```
+
+---
+
+## Decision Matrix: When to Extract
+
+| Symptom                    | Extraction Strategy          | Benefit                      |
+|----------------------------|-----------------------------|------------------------------|
+| Too many nulls             | Split by responsibility     | Fewer nulls, easier updates  |
+| Repetitive patterns        | Pattern/component extraction| Reduce duplication           |
+| Mixed responsibilities     | Split by concern            | Safer, easier to reason      |
+| Hard to maintain           | Atomic/pattern-based        | Maintenance, performance     |
+
+---
+
+## Checklist
+
+- [ ] Are more than 60% of style values in a class `null`? **Extract!**
+- [ ] Are classes repeating similar patterns? **Extract into a shared pattern/component.**
+- [ ] Does a class handle layout, visual, and typography? **Split by concern.**
+- [ ] Are new variants always forcing you to change multiple arrays? **Refactor to atomic or pattern-based.**
+
+---
+
+## Benefits of Extraction
+
+- ✅ Cleaner code, fewer nulls
+- ✅ Better reusability and DRYness
+- ✅ Easier maintenance and onboarding
+- ✅ Smaller, more efficient CSS output
+- ✅ Improved UI consistency
+
+---
+
+## Example Before & After
+
+### Before (Problem)
+```js
+// Many nulls, hard to maintain
+this.styleRegistry.addClassPrefix('problematic', [...], [...], [
+  [/* container: */ '...', '...', this.nl, ..., this.nl],
+  [/* card: */ this.nl, this.nl, '...', ..., this.nl],
+]);
+```
+
+### After (Solution)
+```js
+// Split by component and concern
+this.styleRegistry.addClassPrefix('layout', [...], [...], [...]);
+this.styleRegistry.addClassPrefix('card', [...], [...], [...]);
+this.styleRegistry.addClassPrefix('button', [...], [...], [...]);
+```
+
+---
+
+## Still Stuck?
+
+- Check that each prefix only handles one "thing" (layout, visual, etc.).
+- If you see many `null`s, it's a sign to extract.
+- Review the **AtomicDashboard** and **PatternBasedDashboard** examples for inspiration.
+
+---
+
+Feel free to copy and adapt the example extraction strategies from the main docs or code comments to your own project!
