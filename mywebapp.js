@@ -308,6 +308,36 @@
         }
     }
 
+    class DOMFactory {
+        static createElement(config) {
+            if (typeof config === 'string') {
+                return document.createTextNode(config);
+            }
+            const { tag, className, attributes = {}, children = [], events = {} } = config;
+            const element = document.createElement(tag);
+            if (className) element.className = className;
+            Object.entries(attributes).forEach(([key, value]) => {
+                if (key === 'textContent') element.textContent = value;
+                else if (key === 'innerHTML') element.innerHTML = value;
+                else element.setAttribute(key, value);
+            });
+            Object.entries(events).forEach(([event, handler]) => {
+                element.addEventListener(event, handler);
+            });
+            this.appendChildren(element, children);
+            return element;
+        }
+        static appendChildren(parent, children) {
+            children.forEach(child => {
+                if (child) {
+                    const element = typeof child === 'object' && child.tag ?
+                        this.createElement(child) : child;
+                    parent.appendChild(element);
+                }
+            });
+        }
+    }
+
     // Expose the MyHTML5 library to the global object
     const MyHTML5 = {
         StyleRegistry,
@@ -316,7 +346,8 @@
         ImportRegistry,
         ComponentFactory,
         ModuleLoader,
-        ProviderWrapper
+        ProviderWrapper,
+        DOMFactory
     };
 
     // Export the library for different module systems
