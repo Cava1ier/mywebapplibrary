@@ -1,100 +1,4 @@
 /**
- * Modular Style Registry and DOM Handler for React Applications
- * @module StyleRegistry
- */
-
-import { logger } from './utils'; // Assume a simple logger utility
-
-/**
- * Custom error for StyleRegistry-specific issues
- */
-class StyleRegistryError extends Error {
-  constructor(message: string, public readonly code: string) {
-    super(message);
-    this.name = 'StyleRegistryError';
-  }
-}
-
-/**
- * Configuration for registering styles in a component
- */
-interface StyleConfig {
-  styles: string[]; // Array of CSS property names (e.g., ['background-color', 'font-size'])
-  cssclasses: string[]; // Array of meaningful class names (e.g., ['primary', 'secondary'])
-  cssvalues: string[][]; // Array of value arrays (e.g., [['blue', '16px'], ['red', '14px']])
-  prefix: string; // Component-specific prefix (e.g., 'form1')
-}
-
-/**
- * Base Component class for style registration
- * @abstract
- */
-abstract class Component {
-  protected styles: string[] = [];
-  protected cssclasses: string[] = [];
-  protected cssvalues: string[][] = [];
-  protected reindexedstyles: number[] = [];
-  protected prefix: string;
-
-  constructor(prefix: string) {
-    if (!prefix || !/^[a-zA-Z][a-zA-Z0-9-]*$/.test(prefix)) {
-      throw new StyleRegistryError('Component prefix must be a valid alphanumeric string', 'INVALID_PREFIX');
-    }
-    this.prefix = prefix;
-  }
-
-  /**
-   * Register styles with the StyleRegistry
-   * @param registry - The StyleRegistry instance
-   */
-  protected registerStyles(registry: StyleRegistry): void {
-    this.validateStyles();
-    this.reindexedstyles = registry.register(this.styles, this.cssclasses, this.cssvalues, this.prefix);
-  }
-
-  /**
-   * Validate styles, cssclasses, and cssvalues arrays
-   */
-  private validateStyles(): void {
-    if (this.cssclasses.length !== this.cssvalues.length) {
-      throw new StyleRegistryError(
-        `cssclasses (${this.cssclasses.length}) and cssvalues (${this.cssvalues.length}) must have the same length`,
-        'INVALID_STYLE_CONFIG'
-      );
-    }
-    this.cssvalues.forEach((values, index) => {
-      if (values.length !== this.styles.length) {
-        throw new StyleRegistryError(
-          `cssvalues[${index}] length (${values.length}) must match styles length (${this.styles.length})`,
-          'INVALID_STYLE_VALUES'
-        );
-      }
-    });
-  }
-
-  /**
-   * Get the class name for a given cssclass
-   * @param className - The class name (e.g., 'primary')
-   */
-  protected getClassName(className: string): string {
-    const index = this.cssclasses.indexOf(className);
-    if (index === -1) {
-      throw new StyleRegistryError(`Class name '${className}' not found`, 'CLASS_NOT_FOUND');
-    }
-    return `${this.prefix}-${className}`;
-  }
-
-  /**
-   * Abstract render method to be implemented by subclasses
-   */
-  abstract render(): HTMLElement;
-}
-
-/**
- * Style Registry for managing CSS styles with a centralized property array
- * @class StyleRegistry
- */
-/**
  * CSS Management Library for Modular Style Registration
  * @module CssManagement
  */
@@ -110,7 +14,7 @@ class StyleError extends Error {
 }
 
 /**
- * Style Registry for managing CSS styles with a centralized property array
+ * Style Registry for managing CSS styles for collections of elements
  * @class StyleRegistry
  */
 class StyleRegistry {
@@ -135,9 +39,9 @@ class StyleRegistry {
   }
 
   /**
-   * Register styles for a component
+   * Register styles for a component's collection of elements
    * @param styles - Array of CSS property names
-   * @param cssclasses - Array of class names
+   * @param cssclasses - Array of class names (minimum 2 for collections)
    * @param cssvalues - Array of comma-separated value strings
    * @param prefix - Component-specific prefix
    * @returns Array of indexes mapping to centralized styles
@@ -145,6 +49,12 @@ class StyleRegistry {
   register(styles: string[], cssclasses: string[], cssvalues: string[], prefix: string): number[] {
     if (!prefix || !/^[a-zA-Z][a-zA-Z0-9-]*$/.test(prefix)) {
       throw new StyleError('Component prefix must be a valid alphanumeric string', 'INVALID_PREFIX');
+    }
+    if (cssclasses.length < 2) {
+      throw new StyleError(
+        'At least 2 cssclasses are required for collections-based styling',
+        'INSUFFICIENT_CLASSES'
+      );
     }
     if (cssclasses.length !== cssvalues.length) {
       throw new StyleError(
@@ -257,11 +167,6 @@ class StyleRegistry {
  * @class DOMHandler
  */
 class DOMHandler {
-  /**
-   * Create a DOM element
-   * @param tag - HTML tag name
-   * @param attributes - Element attributes
-   */
   static createElement(tag: string, attributes: Record<string, string> = {}): HTMLElement {
     const element = document.createElement(tag);
     Object.entries(attributes).forEach(([key, value]) => {
@@ -274,11 +179,6 @@ class DOMHandler {
     return element;
   }
 
-  /**
-   * Append a child to a parent element
-   * @param parent - Parent element
-   * @param child - Child element or text
-   */
   static appendChild(parent: HTMLElement, child: HTMLElement | string): HTMLElement {
     if (typeof child === 'string') {
       parent.appendChild(document.createTextNode(child));
@@ -288,18 +188,10 @@ class DOMHandler {
     return parent;
   }
 
-  /**
-   * Get element by ID
-   * @param id - Element ID
-   */
   static getElementById(id: string): HTMLElement | null {
     return document.getElementById(id);
   }
 
-  /**
-   * Remove an element from the DOM
-   * @param element - Element to remove
-   */
   static removeElement(element: HTMLElement | null): void {
     if (element && element.parentNode) {
       element.parentNode.removeChild(element);
@@ -308,7 +200,7 @@ class DOMHandler {
 }
 
 /**
- * Base Component class for style registration
+ * Base Component class for style registration for collections of elements
  * @abstract
  */
 abstract class Component {
@@ -340,6 +232,12 @@ abstract class Component {
    * Register styles with the StyleRegistry
    */
   protected registerStyles(): void {
+    if (this.cssclasses.length < 2) {
+      throw new StyleError(
+        'At least 2 cssclasses are required for collections-based styling',
+        'INSUFFICIENT_CLASSES'
+      );
+    }
     this.validateStyles();
     this.reindexedstyles = this.registry.register(this.styles, this.cssclasses, this.cssvalues, this.prefix);
   }
