@@ -7,9 +7,10 @@
  * Custom error for style-related issues
  */
 class StyleError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(message, code) {
     super(message);
     this.name = 'StyleError';
+    this.code = code;
   }
 }
 
@@ -18,35 +19,31 @@ class StyleError extends Error {
  * @class StyleRegistry
  */
 class StyleRegistry {
-  private readonly appPrefix: string;
-  private readonly nullValue: string;
-  private readonly styles: string[] = []; // Centralized unique CSS property names
-  private readonly styleMap = new Map<string, Map<string, string[]>>(); // prefix -> className -> values
-  private readonly styleElementId: string;
-
   /**
    * Initialize StyleRegistry with an application prefix and null value
-   * @param appPrefix - Application-wide prefix (e.g., 'myApp')
-   * @param nullValue - Value for non-applicable properties (default: 'inherit')
+   * @param {string} appPrefix - Application-wide prefix (e.g., 'myApp')
+   * @param {string} nullValue - Value for non-applicable properties (default: 'inherit')
    */
-  constructor(appPrefix: string, nullValue: string = 'inherit') {
+  constructor(appPrefix, nullValue = 'inherit') {
     if (!appPrefix || !/^[a-zA-Z][a-zA-Z0-9-]*$/.test(appPrefix)) {
       throw new StyleError('Application prefix must be a valid alphanumeric string', 'INVALID_APP_PREFIX');
     }
     this.appPrefix = appPrefix;
     this.nullValue = nullValue;
+    this.styles = []; // Centralized unique CSS property names
+    this.styleMap = new Map(); // prefix -> className -> values
     this.styleElementId = `${appPrefix}-styles`;
   }
 
   /**
    * Register styles for a component's collection of elements
-   * @param styles - Array of CSS property names
-   * @param cssclasses - Array of class names (minimum 2 for collections)
-   * @param cssvalues - Array of comma-separated value strings
-   * @param prefix - Component-specific prefix
-   * @returns Array of indexes mapping to centralized styles
+   * @param {string[]} styles - Array of CSS property names
+   * @param {string[]} cssclasses - Array of class names (minimum 2 for collections)
+   * @param {string[]} cssvalues - Array of comma-separated value strings
+   * @param {string} prefix - Component-specific prefix
+   * @returns {number[]} Array of indexes mapping to centralized styles
    */
-  register(styles: string[], cssclasses: string[], cssvalues: string[], prefix: string): number[] {
+  register(styles, cssclasses, cssvalues, prefix) {
     if (!prefix || !/^[a-zA-Z][a-zA-Z0-9-]*$/.test(prefix)) {
       throw new StyleError('Component prefix must be a valid alphanumeric string', 'INVALID_PREFIX');
     }
@@ -72,7 +69,7 @@ class StyleRegistry {
       }
     });
 
-    const indexes: number[] = styles.map(prop => {
+    const indexes = styles.map(prop => {
       const index = this.styles.indexOf(prop);
       if (index === -1) {
         this.styles.push(prop);
@@ -81,7 +78,7 @@ class StyleRegistry {
       return index;
     });
 
-    const classMap = new Map<string, string[]>();
+    const classMap = new Map();
     cssclasses.forEach((className, index) => {
       const values = cssvalues[index].split(',').map(value => value || this.nullValue);
       classMap.set(className, values);
@@ -94,21 +91,23 @@ class StyleRegistry {
 
   /**
    * Get the centralized styles array
+   * @returns {string[]}
    */
-  getStyles(): string[] {
+  getStyles() {
     return [...this.styles];
   }
 
   /**
    * Get the full class name for a component
-   * @param prefix - Component prefix
-   * @param className - Class name
+   * @param {string} prefix - Component prefix
+   * @param {string} className - Class name
+   * @returns {string}
    */
-  getClassName(prefix: string, className: string): string {
+  getClassName(prefix, className) {
     if (!this.styleMap.has(prefix)) {
       throw new StyleError(`Prefix '${prefix}' not registered`, 'PREFIX_NOT_FOUND');
     }
-    if (!this.styleMap.get(prefix)!.has(className)) {
+    if (!this.styleMap.get(prefix).has(className)) {
       throw new StyleError(`Class name '${className}' not found for prefix '${prefix}'`, 'CLASS_NOT_FOUND');
     }
     return `${this.appPrefix}-${prefix}-${className}`;
@@ -116,9 +115,9 @@ class StyleRegistry {
 
   /**
    * Remove styles for a component
-   * @param prefix - Component prefix
+   * @param {string} prefix - Component prefix
    */
-  removeStyles(prefix: string): void {
+  removeStyles(prefix) {
     this.styleMap.delete(prefix);
     this.#injectStyles();
   }
@@ -126,7 +125,7 @@ class StyleRegistry {
   /**
    * Clear all styles
    */
-  clearAll(): void {
+  clearAll() {
     this.styleMap.clear();
     this.styles.length = 0;
     const styleElement = DOMHandler.getElementById(this.styleElementId);
@@ -138,7 +137,7 @@ class StyleRegistry {
   /**
    * Inject styles into the DOM
    */
-  #injectStyles(): void {
+  #injectStyles() {
     let cssRules = '';
     for (const [prefix, classMap] of this.styleMap) {
       for (const [className, values] of classMap) {
@@ -167,7 +166,12 @@ class StyleRegistry {
  * @class DOMHandler
  */
 class DOMHandler {
-  static createElement(tag: string, attributes: Record<string, string> = {}): HTMLElement {
+  /**
+   * @param {string} tag
+   * @param {Record<string, string>} attributes
+   * @returns {HTMLElement}
+   */
+  static createElement(tag, attributes = {}) {
     const element = document.createElement(tag);
     Object.entries(attributes).forEach(([key, value]) => {
       if (key === 'textContent') {
@@ -179,7 +183,12 @@ class DOMHandler {
     return element;
   }
 
-  static appendChild(parent: HTMLElement, child: HTMLElement | string): HTMLElement {
+  /**
+   * @param {HTMLElement} parent
+   * @param {HTMLElement | string} child
+   * @returns {HTMLElement}
+   */
+  static appendChild(parent, child) {
     if (typeof child === 'string') {
       parent.appendChild(document.createTextNode(child));
     } else {
@@ -188,11 +197,18 @@ class DOMHandler {
     return parent;
   }
 
-  static getElementById(id: string): HTMLElement | null {
+  /**
+   * @param {string} id
+   * @returns {HTMLElement | null}
+   */
+  static getElementById(id) {
     return document.getElementById(id);
   }
 
-  static removeElement(element: HTMLElement | null): void {
+  /**
+   * @param {HTMLElement | null} element
+   */
+  static removeElement(element) {
     if (element && element.parentNode) {
       element.parentNode.removeChild(element);
     }
@@ -203,35 +219,32 @@ class DOMHandler {
  * Base Component class for style registration for collections of elements
  * @abstract
  */
-abstract class Component {
-  protected styles: string[] = [];
-  protected cssclasses: string[] = [];
-  protected cssvalues: string[] = []; // Comma-separated value strings
-  protected reindexedstyles: number[] = [];
-  protected prefix: string;
-  protected registry: StyleRegistry;
-  protected nl = null; // Null value for non-applicable properties
-
+class Component {
   /**
    * Initialize Component with a prefix and StyleRegistry
-   * @param prefix - Component-specific prefix
-   * @param registry - Shared StyleRegistry instance
+   * @param {string} prefix - Component-specific prefix
+   * @param {StyleRegistry} registry - Shared StyleRegistry instance
    */
-  constructor(prefix: string, registry: StyleRegistry) {
+  constructor(prefix, registry) {
     if (!prefix || !/^[a-zA-Z][a-zA-Z0-9-]*$/.test(prefix)) {
       throw new StyleError('Component prefix must be a valid alphanumeric string', 'INVALID_PREFIX');
     }
     if (!registry) {
       throw new StyleError('StyleRegistry is required', 'INVALID_REGISTRY');
     }
+    this.styles = [];
+    this.cssclasses = [];
+    this.cssvalues = []; // Comma-separated value strings
+    this.reindexedstyles = [];
     this.prefix = prefix;
     this.registry = registry;
+    this.nl = null; // Null value for non-applicable properties
   }
 
   /**
    * Register styles with the StyleRegistry
    */
-  protected registerStyles(): void {
+  registerStyles() {
     if (this.cssclasses.length < 2) {
       throw new StyleError(
         'At least 2 cssclasses are required for collections-based styling',
@@ -245,7 +258,7 @@ abstract class Component {
   /**
    * Validate styles, cssclasses, and cssvalues
    */
-  private validateStyles(): void {
+  validateStyles() {
     if (this.cssclasses.length !== this.cssvalues.length) {
       throw new StyleError(
         `cssclasses (${this.cssclasses.length}) and cssvalues (${this.cssvalues.length}) must have the same length`,
@@ -265,9 +278,10 @@ abstract class Component {
 
   /**
    * Get the class name for a given cssclass
-   * @param className - The class name (e.g., 'primary')
+   * @param {string} className - The class name (e.g., 'primary')
+   * @returns {string}
    */
-  protected getClassName(className: string): string {
+  getClassName(className) {
     const index = this.cssclasses.indexOf(className);
     if (index === -1) {
       throw new StyleError(`Class name '${className}' not found`, 'CLASS_NOT_FOUND');
@@ -277,8 +291,11 @@ abstract class Component {
 
   /**
    * Abstract render method to be implemented by subclasses
+   * @returns {HTMLElement}
    */
-  abstract render(): HTMLElement;
+  render() {
+    throw new Error('render() method must be implemented by subclasses');
+  }
 }
 
 /**
@@ -286,7 +303,10 @@ abstract class Component {
  * @class Card
  */
 class Card extends Component {
-  constructor(registry: StyleRegistry) {
+  /**
+   * @param {StyleRegistry} registry
+   */
+  constructor(registry) {
     super('form1', registry);
     this.styles = [
       'background-color', // Button-exclusive
@@ -307,7 +327,10 @@ class Card extends Component {
     this.registerStyles();
   }
 
-  render(): HTMLElement {
+  /**
+   * @returns {HTMLElement}
+   */
+  render() {
     const card = DOMHandler.createElement('div', { class: 'card' });
     for (let i = 0; i < 4; i++) {
       const className = i % 2 === 0 ? 'label-primary' : 'label-secondary';
