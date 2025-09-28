@@ -435,8 +435,3 @@ class Card extends Component {
  * Exports for the module
  */
 export { StyleRegistry, DOMHandler, Component, Card };
-
-/**
- * Exports for the module
- */
-export { StyleRegistry, DOMHandler, Component, Card };
