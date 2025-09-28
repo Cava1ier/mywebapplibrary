@@ -1,393 +1,107 @@
-MyHTML5 StyleRegistry - New Functionalities README
-🎨 Enhanced StyleRegistry Features
-The StyleRegistry has been significantly enhanced with powerful new features while maintaining 100% backward compatibility with existing functionality.
+MyHTML5 Library README for AI Agents
+Introduction
+MyHTML5 is a modular JavaScript library designed for efficient CSS style management and DOM manipulation. It provides classes like StyleRegistry for dynamic styling (including themes, animations, and transitions) and DOMHandler for comprehensive DOM operations (including enhanced form handling). This README is specifically tailored for AI agents, such as language models or automated scripts, to guide optimal usage in generating, modifying, or interacting with web content programmatically.
+The library is self-contained in a single file and can be included via a <script> tag or imported as a module. It emphasizes performance, modularity, and error handling to suit AI-driven workflows where code is generated dynamically.
+Key Principles for AI Agents
 
-📋 Table of Contents
-Global Styles Management
-Theme System
-CSS Variables Management
-Animation System
-Responsive Utilities
-Style Observers
-Import/Export System
-Performance Monitoring
-Pseudo-class Support
-🌍 Global Styles Management
-Add global CSS rules that apply across your entire application.
+Deterministic and Predictable Usage: Always use explicit methods to avoid side effects. The library throws descriptive errors for invalid inputs, so wrap calls in try-catch blocks in generated code.
+Modularity for AI Generation: Break down tasks into small, composable operations (e.g., create styles first, then elements). This aligns with AI's step-by-step reasoning.
+Performance Awareness: Use getPerformanceStats to monitor resource usage, especially in long-running scripts or when generating large UIs.
+Dynamic Adaptation: Leverage observers and export/import features to persist or adapt styles/themes across sessions or AI iterations.
+No External Dependencies: The library is vanilla JS, making it ideal for sandboxed environments or AI-generated snippets without additional setups.
+Error-Resilient Code Generation: When generating code, include checks for DOM readiness (e.g., document.readyState === 'complete').
 
-Basic Usage
-javascript
+Best Ways to Use the Library
+1. Initialization
 
+Start with StyleRegistry using a unique appPrefix to namespace styles and avoid conflicts in shared environments:
+javascriptconst registry = new MyHTML5.StyleRegistry('aiGeneratedApp');
 
-const styleRegistry = new MyHTML5.StyleRegistry('myapp');
+For DOM operations, use DOMHandler statically—no instantiation needed.
 
-// Add global styles
-styleRegistry.addGlobalStyle('body', {
-    margin: '0',
-    padding: '0',
-    fontFamily: 'Arial, sans-serif'
+2. Style Management with StyleRegistry
+
+Scoped Classes: Use addClassPrefix to define groups of classes. Ideal for AI generating component-specific styles:
+javascriptregistry.addClassPrefix('aiButton', ['background-color', 'color'], ['primary', 'secondary'], [['#007bff', '#fff'], ['#dc3545', '#fff']]);
+const className = registry.cls('aiButton', 'primary'); // 'aiGeneratedApp-aiButton-primary'
+
+Global Styles and Transitions: Add global rules or transitions for smooth UI effects. Transitions are enhanced for easy addition:
+javascriptregistry.addGlobalStyle('body', { fontFamily: 'Arial, sans-serif' });
+registry.addTransition('.aiButton', ['background-color', 'color'], '0.5s', 'ease-in-out');
+
+Themes for Dynamic UIs: Perfect for AI adapting to user preferences (e.g., dark mode):
+javascriptregistry.addTheme('dark', {
+  variables: { bgColor: '#333' },
+  styles: { 'body': { background: 'var(--aiGeneratedApp-bgColor)', color: '#fff' } }
 });
+registry.setTheme('dark');
 
-styleRegistry.addGlobalStyle('*', {
-    boxSizing: 'border-box'
+Animations: Add keyframes for visual feedback:
+javascriptregistry.addAnimation('fadeIn', { '0%': { opacity: 0 }, '100%': { opacity: 1 } });
+
+Observers for Reactivity: Register callbacks to monitor changes, useful for AI syncing state:
+javascriptconst unsubscribe = registry.addObserver(({ type, action, data }) => {
+  console.log(`Style change: ${type} ${action} ${data}`);
 });
+// Later: unsubscribe();
 
-// Add responsive global styles
-styleRegistry.addGlobalStyle('.container', {
-    maxWidth: '1200px',
-    margin: '0 auto'
-}, '(min-width: 768px)');
-Methods
-addGlobalStyle(selector, styles, mediaQuery?) - Add global CSS rule
-removeGlobalStyle(selector, mediaQuery?) - Remove global CSS rule
-🎭 Theme System
-Create and manage multiple themes for your application with seamless switching.
+Persistence: Use exportStyles and importStyles to serialize state for multi-turn AI interactions.
 
-Creating Themes
-javascript
+3. DOM Manipulation with DOMHandler
 
-
-// Define a light theme
-styleRegistry.addTheme('light', {
-    variables: {
-        'primary-color': '#007bff',
-        'background-color': '#ffffff',
-        'text-color': '#333333',
-        'border-color': '#dee2e6'
-    },
-    styles: {
-        '.app-container': {
-            backgroundColor: 'var(--myapp-background-color)',
-            color: 'var(--myapp-text-color)'
-        }
-    },
-    mediaQueries: {
-        '(max-width: 768px)': {
-            '.app-container': {
-                padding: '10px'
-            }
-        }
-    }
+Declarative Creation: Use createElementFromConfig for AI-generated structures—supports nested configs:
+javascriptconst element = MyHTML5.DOMHandler.createElementFromConfig({
+  tag: 'div',
+  className: 'aiContainer',
+  style: { display: 'flex' },
+  children: [
+    { tag: 'button', textContent: 'Click Me', events: { click: () => alert('AI Action') } }
+  ]
 });
+MyHTML5.DOMHandler.appendChild(document.body, element);
 
-// Define a dark theme
-styleRegistry.addTheme('dark', {
-    variables: {
-        'primary-color': '#0d6efd',
-        'background-color': '#1a1a1a',
-        'text-color': '#ffffff',
-        'border-color': '#404040'
-    },
-    styles: {
-        '.app-container': {
-            backgroundColor: 'var(--myapp-background-color)',
-            color: 'var(--myapp-text-color)'
-        }
-    }
+Form Handling (Enhanced): Serialize and set form data easily, great for AI processing user inputs:
+javascriptconst form = MyHTML5.DOMHandler.createForm({
+  id: 'aiForm',
+  elements: [
+    { tag: 'input', attributes: { type: 'text', name: 'username' } },
+    { tag: 'input', attributes: { type: 'password', name: 'password' } }
+  ]
 });
-Using Themes
-javascript
+MyHTML5.DOMHandler.appendChild(document.body, form);
+// Later:
+MyHTML5.DOMHandler.setFormData(form, { username: 'aiUser', password: 'secret' });
+const data = MyHTML5.DOMHandler.getFormData(form); // { username: 'aiUser', password: 'secret' }
 
-
-// Set active theme
-styleRegistry.setTheme('dark');
-
-// Get current theme
-const currentTheme = styleRegistry.getCurrentTheme(); // 'dark'
-
-// Get available themes
-const themes = styleRegistry.getAvailableThemes(); // ['light', 'dark']
-🎛️ CSS Variables Management
-Dynamically manage CSS custom properties.
-
-Usage
-javascript
-
-
-// Set CSS variables
-styleRegistry.setCSSVariable('primary-color', '#ff6b6b');
-styleRegistry.setCSSVariable('font-size', '16px');
-styleRegistry.setCSSVariable('spacing', '1rem');
-
-// Get CSS variable value
-const primaryColor = styleRegistry.getCSSVariable('primary-color');
-
-// Remove CSS variable
-styleRegistry.removeCSSVariable('primary-color');
-
-// Use in CSS (automatically prefixed)
-// var(--myapp-primary-color)
-🎬 Animation System
-Define and manage CSS animations with keyframes.
-
-Creating Animations
-javascript
-
-
-// Define a fade-in animation
-const fadeInName = styleRegistry.addAnimation('fadeIn', {
-    '0%': {
-        opacity: '0',
-        transform: 'translateY(20px)'
-    },
-    '100%': {
-        opacity: '1',
-        transform: 'translateY(0)'
-    }
+Batch Updates: Use batchOperation for efficient DOM changes in AI-generated loops:
+javascriptconst fragment = MyHTML5.DOMHandler.batchOperation(frag => {
+  for (let i = 0; i < 100; i++) {
+    MyHTML5.DOMHandler.appendChild(frag, MyHTML5.DOMHandler.createTextNode(`Item ${i}`));
+  }
 });
+MyHTML5.DOMHandler.appendChild(document.body, fragment);
 
-// Define a bounce animation
-const bounceName = styleRegistry.addAnimation('bounce', {
-    '0%, 20%, 53%, 80%, 100%': {
-        transform: 'translate3d(0,0,0)'
-    },
-    '40%, 43%': {
-        transform: 'translate3d(0, -30px, 0)'
-    },
-    '70%': {
-        transform: 'translate3d(0, -15px, 0)'
-    },
-    '90%': {
-        transform: 'translate3d(0, -4px, 0)'
-    }
-});
-Using Animations
-javascript
+Querying and Utilities: Chain methods for concise AI code:
+javascriptconst elem = MyHTML5.DOMHandler.querySelector('.aiContainer');
+MyHTML5.DOMHandler.addClass(elem, 'highlighted');
+MyHTML5.DOMHandler.scrollIntoView(elem);
 
 
-// Get animation name for CSS
-const animationName = styleRegistry.getAnimationName('fadeIn');
+4. Integration in AI Workflows
 
-// Use in element styles
-element.style.animation = `${animationName} 0.3s ease-in-out`;
-📱 Responsive Utilities
-Add responsive styles to existing class registries.
+Code Generation: When outputting JS snippets, include the library via:
+html<script src="path/to/myhtml5.js"></script>
+Or as ESM: import { StyleRegistry, DOMHandler } from './myhtml5.js';
+Multi-Step Reasoning: Use tools sequentially—e.g., define styles, create elements, then apply transitions.
+Debugging: Log registry.getPerformanceStats() in generated code to monitor AI-created UIs.
+Cleanup: Call registry.clearAll() at the end of sessions to reset styles.
+Edge Cases: Handle non-DOM environments (e.g., Node.js) by checking typeof document !== 'undefined'.
 
-Usage
-javascript
+Potential Pitfalls and Tips
 
+Avoid Over-Injection: Don't repeatedly call injectStyles—it's automatic.
+Memory Management: Unsubscribe observers and clear registries in long-running AI tasks.
+Browser Compatibility: Tested on modern browsers; for older, polyfill if needed.
+AI-Specific Optimization: When generating code, prioritize declarative configs over imperative loops for readability and error reduction.
 
-// First, create a class registry
-styleRegistry.addClassPrefix('btn', 
-    ['padding', 'font-size', 'border-radius'],
-    ['primary', 'secondary'],
-    [
-        ['12px 24px', '16px', '4px'],
-        ['8px 16px', '14px', '4px']
-    ]
-);
-
-// Add responsive styles
-styleRegistry.addResponsiveStyle('btn', 'primary', {
-    '(max-width: 768px)': {
-        padding: '8px 16px',
-        fontSize: '14px'
-    },
-    '(min-width: 1200px)': {
-        padding: '16px 32px',
-        fontSize: '18px'
-    }
-});
-ClassRegistry Responsive Methods
-javascript
-
-
-const btnRegistry = styleRegistry.registries.get('btn');
-
-// Add responsive styles directly to registry
-btnRegistry.addResponsiveStyle('primary', {
-    '(max-width: 480px)': {
-        width: '100%',
-        display: 'block'
-    }
-});
-👁️ Style Observers
-Monitor style registry changes with observer pattern.
-
-Usage
-javascript
-
-
-// Add observer
-const unsubscribe = styleRegistry.addObserver((event) => {
-    console.log('Style change:', event);
-    // event: { type, action, data, registry }
-});
-
-// Observer receives events for:
-// - classPrefix: added, removed
-// - globalStyle: added, removed
-// - theme: added, changed
-// - cssVariable: set, removed
-// - animation: added
-// - responsiveStyle: added
-// - registry: cleared, imported
-
-// Unsubscribe
-unsubscribe();
-Example Observer Implementation
-javascript
-
-
-styleRegistry.addObserver(({ type, action, data }) => {
-    switch (type) {
-        case 'theme':
-            if (action === 'changed') {
-                console.log(`Theme switched to: ${data}`);
-                // Update UI elements, save preference, etc.
-            }
-            break;
-        case 'cssVariable':
-            if (action === 'set') {
-                console.log(`CSS variable ${data} updated`);
-            }
-            break;
-    }
-});
-💾 Import/Export System
-Save and restore complete style registry state.
-
-Export Styles
-javascript
-
-
-// Export complete registry state
-const styleData = styleRegistry.exportStyles();
-
-// Save to localStorage
-localStorage.setItem('appStyles', JSON.stringify(styleData));
-
-// Send to server
-fetch('/api/save-styles', {
-    method: 'POST',
-    body: JSON.stringify(styleData)
-});
-Import Styles
-javascript
-
-
-// Load from localStorage
-const savedStyles = JSON.parse(localStorage.getItem('appStyles'));
-styleRegistry.importStyles(savedStyles);
-
-// Load from server
-fetch('/api/load-styles')
-    .then(response => response.json())
-    .then(styleData => {
-        styleRegistry.importStyles(styleData);
-    });
-Export Data Structure
-javascript
-
-
-{
-    appPrefix: 'myapp',
-    registries: {
-        'btn': { styles: [...], classnames: [...], styleValues: [...] }
-    },
-    globalStyles: {
-        'body': { selector: 'body', styles: {...}, mediaQuery: null }
-    },
-    themes: {
-        'dark': { variables: {...}, styles: {...}, mediaQueries: {...} }
-    },
-    cssVariables: {
-        'primary-color': '#007bff'
-    },
-    animations: {
-        'fadeIn': { keyframes: {...}, options: {...} }
-    },
-    currentTheme: 'dark'
-}
-📊 Performance Monitoring
-Monitor registry performance and usage statistics.
-
-Usage
-javascript
-
-
-// Get performance stats
-const stats = styleRegistry.getPerformanceStats();
-
-console.log(stats);
-// Output:
-// {
-//     registriesCount: 5,
-//     globalStylesCount: 12,
-//     themesCount: 3,
-//     animationsCount: 8,
-//     cssVariablesCount: 15,
-//     observersCount: 2,
-//     injectedStylesCount: 5
-// }
-🎯 Pseudo-class Support
-Add hover, focus, active, and other pseudo-class styles.
-
-Usage
-javascript
-
-
-const btnRegistry = styleRegistry.registries.get('btn');
-
-// Add hover styles
-btnRegistry.addPseudoStyle('primary', 'hover', {
-    backgroundColor: '#0056b3',
-    transform: 'translateY(-1px)'
-});
-
-// Add focus styles
-btnRegistry.addPseudoStyle('primary', 'focus', {
-    outline: '2px solid #007bff',
-    outlineOffset: '2px'
-});
-
-// Add active styles
-btnRegistry.addPseudoStyle('primary', 'active', {
-    transform: 'translateY(0)',
-    backgroundColor: '#004085'
-});
-🔄 Complete Example
-Here's a comprehensive example using multiple new features:
-
-javascript
-
-
-// Initialize registry
-const styleRegistry = new MyHTML5.StyleRegistry('myapp');
-
-// Add observer for debugging
-styleRegistry.addObserver(console.log);
-
-// Create themes
-styleRegistry.addTheme('light', {
-    variables: {
-        'bg': '#ffffff',
-        'text': '#333333',
-        'primary': '#007bff'
-    }
-});
-
-styleRegistry.addTheme('dark', {
-    variables: {
-        'bg': '#1a1a1a',
-        'text': '#ffffff',
-        'primary': '#0d6efd'
-    }
-});
-
-// Add global styles
-styleRegistry.addGlobalStyle('body', {
-    backgroundColor: 'var(--myapp-bg)',
-    color: 'var(--myapp-text)',
-    transition: 'all 0.3s ease'
-});
-
-// Create animations
-styleRegistry.addAnimation('slideIn', {
-    '0%': { transform: 'translateX(-100%)' },
-    '100%': { transform: 'translateX(0)' }
-});
-
-// Create button registry
-styleRegistry.addClassPrefix('btn', 
-    ['padding', 'backgroundColor
+For full API details, refer to the source code comments. This library evolves with enhancements like transition support and form utilities to better serve AI agents in web tasks.
